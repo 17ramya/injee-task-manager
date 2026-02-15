@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Task Dashboard</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>Task Dashboard</h1>
+  <a href="crud.html">Manage Tasks</a>
+  <table id="taskTable">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Attachment</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const BASE_URL = "http://localhost:4125/data/people"; // replace with backend URL
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(BASE_URL);
+        const tasks = await res.json();
+        const tbody = document.querySelector("#taskTable tbody");
+        tbody.innerHTML = "";
+        tasks.forEach(task => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${task.title}</td>
+            <td>${task.priority}</td>
+            <td>${task.completed ? "Completed" : "Pending"}</td>
+            <td>${task.fileUrl ? `<a href="${task.fileUrl}" target="_blank">View</a>` : "-"}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Error loading tasks:", err);
+      }
+    }
+
+    loadTasks();
+  </script>
+</body>
+</html>

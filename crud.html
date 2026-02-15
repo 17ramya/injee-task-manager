@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Tasks</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input, select { margin: 5px 0; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    button { margin-left: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Manage Tasks</h1>
+  <a href="index.html">View Dashboard</a>
+
+  <h3>Add Task</h3>
+  <input type="text" id="title" placeholder="Task Title" />
+  <select id="priority">
+    <option>High</option>
+    <option>Medium</option>
+    <option>Low</option>
+  </select>
+  <input type="file" id="file" />
+  <button onclick="addTask()">Add Task</button>
+
+  <table id="taskTable">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Attachment</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const BASE_URL = "http://localhost:4125/data/people"; // replace with backend URL
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(BASE_URL);
+        const tasks = await res.json();
+        const tbody = document.querySelector("#taskTable tbody");
+        tbody.innerHTML = "";
+        tasks.forEach(task => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${task.title}</td>
+            <td>${task.priority}</td>
+            <td>${task.completed ? "Completed" : "Pending"}</td>
+            <td>${task.fileUrl ? `<a href="${task.fileUrl}" target="_blank">View</a>` : "-"}</td>
+            <td>
+              <button onclick='toggleComplete(${JSON.stringify(task)})'>Toggle</button>
+              <button onclick='editTask(${JSON.stringify(task)})'>Edit</button>
+              <button onclick='deleteTask(${task.id})'>Delete</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Error loading tasks:", err);
+      }
+    }
+
+    async function addTask() {
+      const title = document.getElementById("title").value;
+      const priority = document.getElementById("priority").value;
+      const fileInput = document.getElementById("file");
+      let taskData = { title, priority, completed: false };
+
+      // File upload if selected
+      if (fileInput.files.length > 0) {
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        const res = await fetch(`${BASE_URL}/upload`, {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        taskData.fileUrl = data.url;
+      }
+
+      await fetch(BASE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(taskData)
+      });
+
+      document.getElementById("title").value = "";
+      document.getElementById("file").value = "";
+      loadTasks();
+    }
+
+    async function toggleComplete(task) {
+      await fetch(`${BASE_URL}/${task.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...task, completed: !task.completed })
+      });
+      loadTasks();
+    }
+
+    async function editTask(task) {
+      const newTitle = prompt("Edit title:", task.title);
+      if (!newTitle) return;
+      await fetch(`${BASE_URL}/${task.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...task, title: newTitle })
+      });
+      loadTasks();
+    }
+
+    async function deleteTask(id) {
+      await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
+      loadTasks();
+    }
+
+    loadTasks();
+  </script>
+</body>
+</html>
