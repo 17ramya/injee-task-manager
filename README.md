@@ -29,6 +29,7 @@ Check if it is running:
 Open the terminal and run:
 
 ```bash
+  cd injee-task-manager
   cd frontend  
 ```
 
